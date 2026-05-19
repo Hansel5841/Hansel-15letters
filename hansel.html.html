@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEXIS-15 — by Hansel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0e;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #252535;
+    --text: #f2f0ff;
+    --muted: #5a5a7a;
+    --accent: #c8ff47;
+    --accent2: #ff47a3;
+    --correct: #47ffb2;
+    --present: #ffa347;
+    --absent: #2a2a38;
+    --key-bg: #1e1e2e;
+    --key-text: #b0b0cc;
+    --glow: rgba(200,255,71,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* Animated bg grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(200,255,71,0.07) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    width: 100%;
+    max-width: 920px;
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(200,255,71,0.4);
+  }
+
+  .logo-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .byline {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--accent2);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.9;
+    border: 1px solid rgba(255,71,163,0.3);
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255,71,163,0.06);
+  }
+
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-icon {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+
+  /* STATS BAR */
+  .stats-bar {
+    width: 100%;
+    max-width: 920px;
+    padding: 10px 24px;
+    display: flex;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-pill strong { color: var(--accent); font-weight: 700; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--text);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 10px 24px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 999;
+    pointer-events: none;
+    text-transform: uppercase;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* BOARD */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 920px;
+    padding: 14px 16px 0;
+    position: relative;
+    z-index: 1;
+    gap: 10px;
+  }
+
+  #board {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 5px;
+  }
+
+  .tile {
+    aspect-ratio: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    transition: border-color 0.1s, transform 0.1s;
+    user-select: none;
+    position: relative;
+  }
+
+  .tile.filled {
+    border-color: var(--muted);
+    animation: pop 0.1s ease;
+  }
+
+  .tile.correct {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #04201a;
+    animation: reveal 0.35s ease forwards;
+  }
+  .tile.present {
+    background: var(--present);
+    border-color: var(--present);
+    color: #201000;
+    animation: reveal 0.35s ease forwards;
+  }
+  .tile.absent {
+    background: var(--absent);
+    border-color: var(--absent);
+    color: var(--muted);
+    animation: reveal 0.35s ease forwards;
+  }
+  .tile.shake { animation: shake 0.4s ease; }
+  .tile.bounce { animation: bounce 0.6s ease forwards; }
+
+  @keyframes pop {
+    0% { transform: scale(0.88); }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  @keyframes reveal {
+    0% { transform: rotateX(0deg); }
+    45% { transform: rotateX(90deg); opacity: 0.4; }
+    100% { transform: rotateX(0deg); opacity: 1; }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    65% { transform: translateY(-5px); }
+  }
+
+  /* HINT */
+  .hint-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .hint-bar:hover { border-color: var(--accent); box-shadow: 0 0 16px var(--glow); }
+  .hint-bar .hint-icon { font-size: 0.95rem; }
+  .hint-bar .hint-text { flex: 1; font-family: 'Syne', sans-serif; font-size: 0.72rem; }
+  .hint-bar .hint-count { font-family: 'Space Mono', monospace; color: var(--accent); font-size: 0.65rem; }
+
+  /* KEYBOARD */
+  #keyboard {
+    width: 100%;
+    max-width: 920px;
+    padding: 12px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .kb-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .key {
+    background: var(--key-bg);
+    color: var(--key-text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    height: 48px;
+    min-width: 34px;
+    padding: 0 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex: 1;
+    max-width: 40px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    letter-spacing: 0;
+  }
+  .key:active { transform: scale(0.92); }
+  .key.wide { max-width: 62px; font-size: 0.58rem; flex: 1.6; }
+  .key.correct { background: var(--correct); border-color: var(--correct); color: #04201a; }
+  .key.present { background: var(--present); border-color: var(--present); color: #201000; }
+  .key.absent  { background: var(--absent);  border-color: var(--absent);  color: #44445a; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 32px 28px;
+    max-width: 420px;
+    width: calc(100% - 32px);
+    position: relative;
+    transform: translateY(24px) scale(0.97);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--muted); }
+
+  .modal h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 4px;
+    text-shadow: 0 0 20px rgba(200,255,71,0.3);
+  }
+  .modal p { color: var(--muted); font-size: 0.82rem; line-height: 1.65; margin-bottom: 14px; font-family: 'Syne', sans-serif; }
+
+  .modal-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 18px 0;
+  }
+  .mstat {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 6px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .mstat .val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .mstat .lbl {
+    font-size: 0.58rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .dist-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .dist-label { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--muted); width: 10px; }
+  .dist-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 20px; overflow: hidden; }
+  .dist-fill {
+    height: 100%;
+    background: var(--absent);
+    border-radius: 4px;
+    min-width: 20px;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 7px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    transition: width 0.5s ease;
+  }
+  .dist-fill.current { background: var(--correct); color: #04201a; }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    margin-top: 18px;
+    transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.92; transform: scale(1.015); box-shadow: 0 4px 24px rgba(200,255,71,0.3); }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .result-word {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.12em;
+    color: var(--correct);
+    text-align: center;
+    margin: 10px 0 4px;
+    word-break: break-all;
+    text-shadow: 0 0 20px rgba(71,255,178,0.4);
+  }
+  .result-subtitle { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 14px; font-family: 'Space Mono', monospace; }
+
+  /* HOW TO PLAY examples */
+  .how-example { display: flex; gap: 4px; margin: 10px 0; flex-wrap: wrap; }
+  .he-tile {
+    width: 28px; height: 28px;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .he-tile.c { background: var(--correct); border-color: var(--correct); color: #04201a; }
+  .he-tile.p { background: var(--present); border-color: var(--present); color: #201000; }
+  .he-tile.a { background: var(--absent); border-color: var(--absent); color: var(--muted); }
+
+  /* Footer credit */
+  .footer-credit {
+    width: 100%;
+    text-align: center;
+    padding: 8px 0 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-credit span { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-block">
+    <div class="logo">LEXIS&#8209;15</div>
+    <div class="logo-sub">15-Letter Word Guesser</div>
+  </div>
+  <div class="byline">✦ Made by Hansel ✦</div>
+  <div class="header-right">
+    <button class="btn-icon" id="helpBtn" title="How to play">?</button>
+    <button class="btn-icon" id="statsBtn" title="Stats">📊</button>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-pill">🏆 <strong id="streakDisp">0</strong> streak</div>
+  <div class="stat-pill">🎯 <strong id="winDisp">0</strong>% wins</div>
+  <div class="stat-pill">🎮 <strong id="gamesDisp">0</strong> played</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- BOARD -->
+<main>
+  <div id="board"></div>
+  <div class="hint-bar" id="hintBtn">
+    <span class="hint-icon">💡</span>
+    <span class="hint-text">Use a hint — reveals a random letter</span>
+    <span class="hint-count" id="hintCount">3 left</span>
+  </div>
+</main>
+
+<!-- KEYBOARD -->
+<div id="keyboard">
+  <div class="kb-row" id="row1"></div>
+  <div class="kb-row" id="row2"></div>
+  <div class="kb-row" id="row3"></div>
+</div>
+
+<div class="footer-credit">LEXIS-15 &nbsp;·&nbsp; <span>Made by Hansel</span> &nbsp;·&nbsp; Guess the 15-letter word</div>
+
+<!-- MODAL: HOW TO PLAY -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('helpModal')">✕</button>
+    <h2>How to Play</h2>
+    <p>Guess the <strong style="color:var(--text)">15-letter word</strong> in 6 tries. After each guess, tiles reveal how close you were.</p>
+
+    <div class="how-example">
+      <div class="he-tile c">C</div><div class="he-tile">O</div><div class="he-tile">M</div><div class="he-tile">P</div><div class="he-tile">R</div><div class="he-tile">E</div><div class="he-tile">H</div><div class="he-tile">E</div><div class="he-tile">N</div><div class="he-tile">S</div><div class="he-tile">I</div><div class="he-tile">B</div><div class="he-tile">L</div><div class="he-tile">L</div><div class="he-tile">Y</div>
+    </div>
+    <p><strong style="color:var(--correct)">C</strong> is in the correct position.</p>
+
+    <div class="how-example">
+      <div class="he-tile">U</div><div class="he-tile p">N</div><div class="he-tile">D</div><div class="he-tile">E</div><div class="he-tile">R</div><div class="he-tile">S</div><div class="he-tile">T</div><div class="he-tile">A</div><div class="he-tile">N</div><div class="he-tile">D</div><div class="he-tile">A</div><div class="he-tile">B</div><div class="he-tile">L</div><div class="he-tile">L</div><div class="he-tile">Y</div>
+    </div>
+    <p><strong style="color:var(--present)">N</strong> is in the word but wrong position.</p>
+
+    <div class="how-example">
+      <div class="he-tile">P</div><div class="he-tile">R</div><div class="he-tile a">O</div><div class="he-tile">F</div><div class="he-tile">E</div><div class="he-tile">S</div><div class="he-tile">S</div><div class="he-tile">I</div><div class="he-tile">O</div><div class="he-tile">N</div><div class="he-tile">A</div><div class="he-tile">L</div><div class="he-tile">L</div><div class="he-tile">L</div><div class="he-tile">Y</div>
+    </div>
+    <p><strong style="color:var(--muted)">O</strong> is not in the word at all.</p>
+
+    <p style="margin-top:14px">You get <strong style="color:var(--text)">3 hints</strong> per game. Use them wisely!</p>
+    <button class="btn-primary" onclick="closeModal('helpModal')">Let's Play!</button>
+  </div>
+</div>
+
+<!-- MODAL: STATS -->
+<div class="modal-overlay" id="statsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('statsModal')">✕</button>
+    <h2>Statistics</h2>
+    <div class="modal-stats">
+      <div class="mstat"><div class="val" id="s-played">0</div><div class="lbl">Played</div></div>
+      <div class="mstat"><div class="val" id="s-win">0%</div><div class="lbl">Win %</div></div>
+      <div class="mstat"><div class="val" id="s-streak">0</div><div class="lbl">Streak</div></div>
+      <div class="mstat"><div class="val" id="s-best">0</div><div class="lbl">Best</div></div>
+    </div>
+    <p style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace;">Guess Distribution</p>
+    <div id="distBars"></div>
+    <button class="btn-primary" onclick="closeModal('statsModal')">Close</button>
+  </div>
+</div>
+
+<!-- MODAL: RESULT -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal" style="text-align:center;">
+    <h2 id="resultTitle">NICE!</h2>
+    <div class="result-word" id="resultWord"></div>
+    <div class="result-subtitle" id="resultSub"></div>
+    <button class="btn-primary" onclick="newGame()">Play Again →</button>
+  </div>
+</div>
+
+<script>
+// ─── WORD LIST (exactly 15 letters) ─────────────────────────────────────────
+const WORDS = [
+  "ACCOMPLISHMENTS","ACKNOWLEDGEMENT","ADVERTISEMENTS","BREATHTAKINGNESS",
+  "CLASSIFICATIONS","COMMUNICATIONS","COMPREHENSIVELY","CONCENTRATIVELY",
+  "CONGRATULATIONS","CONSCIENTIOUSLY","CONSIDERATENESS","CONSTITUTIONALLY",
+  "CONTEMPORANEOUS","CONTRAINDICATED","CONTROVERSIALLY","CONVENTIONALIZE",
+  "CORRESPONDINGLY","COUNTERBALANCED","COUNTERPRODUCTS","CRYSTALLIZATION",
+  "DECENTRALIZATION","DEMOCRATIZATION","DEMONSTRATIONS","DIFFERENTIATING",
+  "DISAPPOINTMENTS","DISCOMFITURE","DISORGANIZATION","DISSATISFACTIONS",
+  "DIVERSIFICATION","ELECTRIFICATION","ELECTROMAGNETIC","ELECTRONICALLY",
+  "ENCOURAGEMENTS","ENTREPRENEURIAL","ENVIRONMENTALLY","ESTABLISHMENTS",
+  "EXPERIMENTATION","EXTRATERRESTRIAL","FAMILIARIZATION","GENERALIZATION",
+  "GLOBALIZATIONS","GROUNDBREAKINGS","HALLUCINATIONS","HUMANITARIANISM",
+  "HYPOTHETICALLY","IMPLEMENTATION","INCOMPREHENSION","INDIVIDUALISTIC",
+  "INDUSTRIOUSNESS","INFRASTRUCTURE","INTELLECTUALISM","INTERNATIONALIZE",
+  "INVESTIGATIONS","JUSTIFICATIONS","KNOWLEDGEABLE","LIBERALIZATION",
+  "MANIFESTATIONS","MATHEMATICALLY","MECHANISTICALLY","MISUNDERSTANDING",
+  "MULTIPLICATION","NATIONALIZATION","NONCONFORMITIES","OBJECTIFICATION",
+  "OPERATIONALIZED","OVERACHIEVEMENT","OVERCOMPLICATED","PARLIAMENTARIAN",
+  "PERSONALIZATIONS","PHARMACEUTICAL","PHILOSOPHICALLY","PHOTOSYNTHESIZED",
+  "PHYSIOLOGICALLY","POLICYFORMATION","POPULARIZATIONS","PREDETERMINATION",
+  "PRESUPPOSITIONS","PRIORITIZATIONS","PROFESSIONALISM","PSYCHOLOGICALLY",
+  "QUALIFICATIONS","RATIONALIZATIONS","RECOMMENDATIONS","REPRESENTATIVES",
+  "RESPONSIBILITIES","REVITALIZATION","SATISFACTORILY","SENSITIZATIONS",
+  "SIMPLIFICATIONS","SOPHISTICATION","STANDARDIZATION","STRATEGIZATION",
+  "STRENGTHENINGLY","SYSTEMATICALLY","TELECOMMUNICATIONS","THEORETICALLY",
+  "TRANSFORMATIONS","UNCONVENTIONALLY","UNDERESTIMATING","UNINTELLIGENTLY",
+  "UNIVERSALIZING","UNPROFESSIONAL","UNQUESTIONINGLY","VISUALIZATIONS",
+  "WESTERNIZATION","ACCOMPLISHMENT","ACKNOWLEDGMENTS","ADMINISTRATION",
+  "AMPLIFICATIONS","CATEGORIZATIONS","CENTRALIZATIONS","CHARACTERISTICS",
+  "CIRCULARIZATION","COLLABORATIONS","COLLECTIVIZING","COMMEMORATIONS",
+  "COMMERCIALIZING","COMMUNICATIONS","COMPLEMENTARILY","COMPREHENSIONS",
+  "COMPUTERIZATION","CONCENTRATIONS","CONFRONTATIONAL","CONGRATULATING",
+  "CONSCIENTIOUSNESS","CONSECUTIVENESS","CONSERVATIONISM","CONTENTIOUSNESS",
+  "CONTRACTUALIZING","CONTRIBUTIONS","CORPORATIZATION","COUNTERMEASURES",
+  "DECONTAMINATING","DECRIMINALIZED","DEHUMANIZATIONS","DELIBERATENESS",
+  "DEMONSTRATIONS","DEPARTMENTATION","DESTABILIZATION","DETERIORATIONS",
+  "DETERMINATION","DIFFERENTIATED","DIMENSIONALITY","DISCONTINUITIES",
+  "DISENFRANCHISED","DISILLUSIONMENT","DISORGANIZATION","DRAMATIZATIONS",
+  "ECCENTRICITIES","EDITORIALIZING","EFFECTUATIONS","ELIMINATIONIST",
+  "EMBODIMENT","EMOTIONALIZATION","EMPLOYABILITIES","ENTREPRENEURSHIP",
+  "EQUITABILITIES","ESTABLISHMENTS","EVALUATIVENESS","EXEMPLIFICATION",
+  "EXTERNALIZATIONS","FAMILIARNESSES","FANTASTICALITY","FORMALIZATIONS",
+  "FORTUITOUSNESS","GLOBALIZATION","GRATIFICATIONS","GROUNDBREAKING",
+  "HALLUCINATING","HOMOGENIZATIONS","HYPOTHESIZATION","IDEALIZATIONS",
+  "IDENTIFICATION","INSTITUTIONALIZED","INTELLECTUALIZE","INTERDISCIPLIN",
+  "INTEROPERABILITY","INTERPRETATIONS","INVESTIGATIONS","LIBERALIZATION",
+  "LONGESTABLISHED","MANIFESTATIONS","MANIPULATIONS","MATERIALIZATIONS",
+  "MECHANIZATIONS","METAMORPHOSING","MINIATURIZATION","MISMANAGEMENTS",
+  "MODERNIZATIONS","MOTIVATIONALLY","NATURALIZATION","NONDISCRIMINATE",
+  "OBJECTIFICATION","OPERATIONALIZING","ORGANIZATIONALLY","OVERSTATEMENTS",
+  "PARTICIPATIONS","PATHOLOGICALLY","PERSONIFICATION","PHILOSOPHIZING",
+  "POLITICIZATION","POPULARIZATION","PRECONCEPTIONS","REPRESENTATIONS",
+  "RESPONSIVENESS","REVITALIZATIONS","RISKMANAGEMENT","SELFGOVERNANCE",
+  "SIMPLIFICATION","SOCIALIZATION","SPIRITUALIZING","STANDARDIZE",
+  "STRATIFICATIONS","SYNCHRONIZABLE","SYSTEMATIZATIONS","TERMINOLOGIES",
+  "TRADITIONALISM","TRANSFORMATION","TRIANGULATIONS","ULTRACONSERVATI",
+  "UNDERACHIEVING","UNDERDEVELOPED","UNIVERSALIZING","UNSUBSTANTIATED",
+  "VERIFICATIONS","VOLUNTEERISMS","WEAPONIZATIONS","WESTERNIZATIONS",
+].filter(w => w.length === 15).map(w => w.toUpperCase());
+
+// Fallback safety net: hard-coded guaranteed 15-letter words
+const GUARANTEED = [
+  "ACCOMPLISHMENTS","ACKNOWLEDGEMENT","CONGRATULATIONS","CONSCIENTIOUSLY",
+  "CONTEMPORANEOUS","CORRESPONDINGLY","CRYSTALLIZATION","DIFFERENTIATION",
+  "DIVERSIFICATION","ELECTRIFICATION","ENCOURAGEMENTS","ENTREPRENEURIAL",
+  "ENVIRONMENTALLY","EXPERIMENTATION","GENERALIZATION","HUMANITARIANISM",
+  "INDIVIDUALISTIC","INDUSTRIOUSNESS","INTELLECTUALISM","MISUNDERSTANDING",
+  "NATIONALIZATION","OBJECTIFICATION","OVERACHIEVEMENT","PARLIAMENTARIAN",
+  "PHARMACEUTICAL","PHILOSOPHICALLY","PHYSIOLOGICALLY","PREDETERMINATION",
+  "PRESUPPOSITIONS","PROFESSIONALISM","PSYCHOLOGICALLY","RECOMMENDATIONS",
+  "RESPONSIBILITIES","STANDARDIZATION","SYSTEMATICALLY","TRANSFORMATIONS",
+  "UNDERESTIMATING","ACCOMPLISHMENT","ADMINISTRATION","CATEGORIZATIONS",
+  "CHARACTERISTICS","COMMERCIALIZING","COMPUTERIZATION","CONFRONTATIONAL",
+  "CONGRATULATING","CONSECUTIVENESS","CONSERVATIONISM","CONTENTIOUSNESS",
+  "COUNTERMEASURES","DECONTAMINATING","DELIBERATENESS","DEMONSTRATIONS",
+  "DEPARTMENTATION","DESTABILIZATION","DETERIORATIONS","DIFFERENTIATED",
+  "DISILLUSIONMENT","DISORGANIZATION","DRAMATIZATIONS","EDITORIALIZING",
+  "ENTREPRENEURSHIP","ESTABLISHMENTS","EXEMPLIFICATION","GLOBALIZATIONS",
+  "GROUNDBREAKING","HOMOGENIZATIONS","IDENTIFICATION","INSTITUTIONALIZE",
+  "INTELLECTUALIZE","INTERPRETATIONS","MINIATURIZATION","MODERNIZATIONS",
+  "NATURALIZATION","OBJECTIFICATION","OPERATIONALIZING","OVERSTATEMENTS",
+  "PARTICIPATIONS","PATHOLOGICALLY","PERSONIFICATION","PHILOSOPHIZING",
+  "POLITICIZATION","POPULARIZATION","REPRESENTATIONS","REVITALIZATIONS",
+  "SIMPLIFICATION","STRATIFICATIONS","TRADITIONALISM","TRANSFORMATION",
+  "UNDERACHIEVING","UNDERDEVELOPED","UNIVERSALIZING","UNSUBSTANTIATED",
+].filter(w => w.length === 15);
+
+const WORD_POOL = WORDS.length > 10 ? WORDS : GUARANTEED;
+const VALID_WORDS = new Set(WORD_POOL);
+
+// ─── GAME STATE ───────────────────────────────────────────────────────────────
+let target, guesses, currentGuess, gameOver, hintsLeft, revealed;
+let stats = JSON.parse(localStorage.getItem('hansel-lexis15-stats') || '{"played":0,"wins":0,"streak":0,"best":0,"dist":[0,0,0,0,0,0]}');
+
+const ROWS = 6, COLS = 15;
+const KB_ROWS = [
+  ['Q','W','E','R','T','Y','U','I','O','P'],
+  ['A','S','D','F','G','H','J','K','L'],
+  ['ENTER','Z','X','C','V','B','N','M','⌫']
+];
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  buildBoard();
+  buildKeyboard();
+  newGame();
+  document.addEventListener('keydown', onKey);
+  document.getElementById('helpBtn').onclick = () => openModal('helpModal');
+  document.getElementById('statsBtn').onclick = () => { updateStatsModal(); openModal('statsModal'); };
+  document.getElementById('hintBtn').onclick = useHint;
+  updateStatsBar();
+}
+
+function newGame() {
+  target = WORD_POOL[Math.floor(Math.random() * WORD_POOL.length)];
+  guesses = [];
+  currentGuess = '';
+  gameOver = false;
+  hintsLeft = 3;
+  revealed = new Set();
+  closeModal('resultModal');
+  resetBoard();
+  resetKeyboard();
+  updateHintBar();
+}
+
+// ─── BOARD ────────────────────────────────────────────────────────────────────
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.id = `row-${r}`;
+    for (let c = 0; c < COLS; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.id = `tile-${r}-${c}`;
+      row.appendChild(tile);
+    }
+    board.appendChild(row);
+  }
+}
+
+function resetBoard() {
+  for (let r = 0; r < ROWS; r++) {
+    document.getElementById(`row-${r}`).classList.remove('active');
+    for (let c = 0; c < COLS; c++) {
+      const t = document.getElementById(`tile-${r}-${c}`);
+      t.textContent = '';
+      t.className = 'tile';
+    }
+  }
+  document.getElementById('row-0').classList.add('active');
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+function buildKeyboard() {
+  KB_ROWS.forEach((row, i) => {
+    const el = document.getElementById(`row${i+1}`);
+    el.innerHTML = '';
+    row.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'key' + (k === 'ENTER' || k === '⌫' ? ' wide' : '');
+      btn.textContent = k;
+      btn.dataset.key = k;
+      btn.onclick = () => handleKey(k);
+      el.appendChild(btn);
+    });
+  });
+}
+
+function resetKeyboard() {
+  document.querySelectorAll('.key').forEach(k => k.classList.remove('correct','present','absent'));
+}
+
+function updateKey(letter, state) {
+  const btn = document.querySelector(`.key[data-key="${letter}"]`);
+  if (!btn) return;
+  const priority = ['absent','present','correct'];
+  const current = ['correct','present','absent'].find(c => btn.classList.contains(c));
+  if (current && priority.indexOf(current) >= priority.indexOf(state)) return;
+  btn.classList.remove('correct','present','absent');
+  btn.classList.add(state);
+}
+
+// ─── INPUT ────────────────────────────────────────────────────────────────────
+function onKey(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Enter') handleKey('ENTER');
+  else if (e.key === 'Backspace') handleKey('⌫');
+  else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toUpperCase());
+}
+
+function handleKey(key) {
+  if (gameOver) return;
+  if (key === '⌫') {
+    if (currentGuess.length > 0) { currentGuess = currentGuess.slice(0,-1); updateCurrentRow(); }
+  } else if (key === 'ENTER') {
+    submitGuess();
+  } else if (currentGuess.length < COLS) {
+    currentGuess += key;
+    updateCurrentRow();
+  }
+}
+
+function updateCurrentRow() {
+  const r = guesses.length;
+  for (let c = 0; c < COLS; c++) {
+    const t = document.getElementById(`tile-${r}-${c}`);
+    if (c < currentGuess.length) { t.textContent = currentGuess[c]; t.classList.add('filled'); }
+    else { t.textContent = ''; t.classList.remove('filled'); }
+  }
+}
+
+// ─── GUESS ────────────────────────────────────────────────────────────────────
+function submitGuess() {
+  if (currentGuess.length < COLS) { shakeRow(guesses.length); toast('Not enough letters'); return; }
+  if (!VALID_WORDS.has(currentGuess)) { shakeRow(guesses.length); toast('Not in word list'); return; }
+
+  const result = evaluate(currentGuess, target);
+  const r = guesses.length;
+
+  result.forEach((state, c) => {
+    const t = document.getElementById(`tile-${r}-${c}`);
+    setTimeout(() => { t.classList.add(state); updateKey(currentGuess[c], state); }, c * 55);
+  });
+
+  guesses.push(currentGuess);
+  document.getElementById(`row-${r}`).classList.remove('active');
+
+  setTimeout(() => {
+    if (currentGuess === target) {
+      bounceRow(r);
+      setTimeout(() => { gameOver = true; updateStatsWin(guesses.length); showResult(true, guesses.length); }, 500);
+    } else if (guesses.length >= ROWS) {
+      gameOver = true; updateStatsLoss(); setTimeout(() => showResult(false, 0), 400);
+    } else {
+      document.getElementById(`row-${guesses.length}`).classList.add('active');
+    }
+    currentGuess = '';
+  }, COLS * 55 + 100);
+}
+
+function evaluate(guess, tgt) {
+  const result = Array(COLS).fill('absent');
+  const tArr = tgt.split('');
+  const gArr = guess.split('');
+  const used = Array(COLS).fill(false);
+  for (let i = 0; i < COLS; i++) {
+    if (gArr[i] === tArr[i]) { result[i] = 'correct'; used[i] = true; gArr[i] = null; }
+  }
+  for (let i = 0; i < COLS; i++) {
+    if (result[i] !== 'correct') {
+      for (let j = 0; j < COLS; j++) {
+        if (!used[j] && gArr[i] === tArr[j]) { result[i] = 'present'; used[j] = true; break; }
+      }
+    }
+  }
+  return result;
+}
+
+// ─── ANIMATIONS ───────────────────────────────────────────────────────────────
+function shakeRow(r) {
+  document.getElementById(`row-${r}`).querySelectorAll('.tile').forEach(t => {
+    t.classList.remove('shake'); void t.offsetWidth; t.classList.add('shake');
+  });
+}
+function bounceRow(r) {
+  document.getElementById(`row-${r}`).querySelectorAll('.tile').forEach((t, i) => {
+    setTimeout(() => t.classList.add('bounce'), i * 55);
+  });
+}
+
+// ─── HINT ─────────────────────────────────────────────────────────────────────
+function useHint() {
+  if (gameOver || hintsLeft <= 0) return;
+  const unrevealed = [];
+  for (let c = 0; c < COLS; c++) { if (!revealed.has(c)) unrevealed.push(c); }
+  if (unrevealed.length === 0) { toast('No more hints!'); return; }
+  const c = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+  revealed.add(c);
+  hintsLeft--;
+  const t = document.getElementById(`tile-${guesses.length}-${c}`);
+  t.textContent = target[c];
+  t.classList.add('filled');
+  const arr = currentGuess.split('');
+  while (arr.length <= c) arr.push('_');
+  arr[c] = target[c];
+  currentGuess = arr.join('').replace(/_/g,'');
+  updateHintBar();
+  toast(`Revealed: ${target[c]} at position ${c+1}`);
+}
+function updateHintBar() {
+  document.getElementById('hintCount').textContent = `${hintsLeft} left`;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── RESULT ───────────────────────────────────────────────────────────────────
+const WIN_MSGS = ['GENIUS!','EXCELLENT!','MAGNIFICENT!','IMPRESSIVE!','NICE!','PHEW!'];
+function showResult(win, count) {
+  document.getElementById('resultWord').textContent = target;
+  if (win) {
+    document.getElementById('resultTitle').textContent = WIN_MSGS[count-1] || 'NICE!';
+    document.getElementById('resultSub').textContent = `Solved in ${count} guess${count===1?'':'es'}`;
+  } else {
+    document.getElementById('resultTitle').textContent = 'BETTER LUCK!';
+    document.getElementById('resultSub').textContent = 'The word was';
+  }
+  setTimeout(() => openModal('resultModal'), 600);
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function updateStatsWin(count) {
+  stats.played++; stats.wins++; stats.streak++;
+  if (stats.streak > stats.best) stats.best = stats.streak;
+  stats.dist[count-1]++;
+  saveStats(); updateStatsBar();
+}
+function updateStatsLoss() {
+  stats.played++; stats.streak = 0;
+  saveStats(); updateStatsBar();
+}
+function saveStats() { localStorage.setItem('hansel-lexis15-stats', JSON.stringify(stats)); }
+function updateStatsBar() {
+  document.getElementById('streakDisp').textContent = stats.streak;
+  document.getElementById('gamesDisp').textContent = stats.played;
+  const pct = stats.played ? Math.round(stats.wins/stats.played*100) : 0;
+  document.getElementById('winDisp').textContent = pct;
+}
+function updateStatsModal() {
+  document.getElementById('s-played').textContent = stats.played;
+  const pct = stats.played ? Math.round(stats.wins/stats.played*100) : 0;
+  document.getElementById('s-win').textContent = pct+'%';
+  document.getElementById('s-streak').textContent = stats.streak;
+  document.getElementById('s-best').textContent = stats.best;
+  const container = document.getElementById('distBars');
+  container.innerHTML = '';
+  const maxVal = Math.max(...stats.dist, 1);
+  const lastCount = gameOver && guesses.length > 0 ? guesses.length : -1;
+  stats.dist.forEach((val, i) => {
+    const pct = Math.max(5, Math.round(val/maxVal*100));
+    container.innerHTML += `<div class="dist-bar">
+      <span class="dist-label">${i+1}</span>
+      <div class="dist-track"><div class="dist-fill ${i+1===lastCount?'current':''}" style="width:${pct}%">${val}</div></div>
+    </div>`;
+  });
+}
+
+init();
+</script>
+</body>
+</html>
